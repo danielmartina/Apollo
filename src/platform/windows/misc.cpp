@@ -1142,7 +1142,7 @@ namespace platf {
     }
 
     // Promote ourselves to high priority class
-    SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+    SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
 
     // Modify NVIDIA control panel settings again, in case they have been changed externally since sunshine launch
     if (nvprefs_instance.load()) {

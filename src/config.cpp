@@ -1189,7 +1189,7 @@ namespace config {
       video.dd.wa.hdr_toggle_delay = std::chrono::milliseconds {value};
     }
 
-    int_between_f(vars, "min_fps_factor", video.min_fps_factor, {1, 3});
+    int_between_f(vars, "min_fps_factor", video.min_fps_factor, {1, 30});
     int_f(vars, "max_bitrate", video.max_bitrate);
     string_f(vars, "fallback_mode", video.fallback_mode);
 

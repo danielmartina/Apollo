@@ -2299,7 +2299,7 @@ namespace video {
     });
 
     // Encoding and capture takes place on this thread
-    platf::adjust_thread_priority(platf::thread_priority_e::high);
+    platf::adjust_thread_priority(platf::thread_priority_e::critical);
 
     std::vector<std::string> display_names;
     int display_p = -1;
@@ -2336,7 +2336,7 @@ namespace video {
     auto hdr_event = mail->event<hdr_info_t>(mail::hdr);
 
     // Encoding takes place on this thread
-    platf::adjust_thread_priority(platf::thread_priority_e::high);
+    platf::adjust_thread_priority(platf::thread_priority_e::critical);
 
     while (!shutdown_event->peek() && images->running()) {
       // Wait for the main capture event when the display is being reinitialized

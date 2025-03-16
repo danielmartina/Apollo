@@ -1297,7 +1297,7 @@ namespace stream {
     auto timebase = boost::posix_time::microsec_clock::universal_time();
 
     // Video traffic is sent on this thread
-    platf::adjust_thread_priority(platf::thread_priority_e::high);
+    platf::adjust_thread_priority(platf::thread_priority_e::critical);
 
     logging::min_max_avg_periodic_logger<double> frame_processing_latency_logger(debug, "Frame processing latency", "ms");
 
@@ -1630,7 +1630,7 @@ namespace stream {
     audio_packet.rtp.ssrc = 0;
 
     // Audio traffic is sent on this thread
-    platf::adjust_thread_priority(platf::thread_priority_e::high);
+    platf::adjust_thread_priority(platf::thread_priority_e::critical);
 
     while (auto packet = packets->pop()) {
       if (shutdown_event->peek()) {
