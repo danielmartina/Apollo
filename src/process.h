@@ -27,6 +27,11 @@
   #include "platform/windows/virtual_display.h"
 #endif
 
+#define VIRTUAL_DISPLAY_UUID "8902CB19-674A-403D-A587-41B092E900BA"
+#define FALLBACK_DESKTOP_UUID "EAAC6159-089A-46A9-9E24-6436885F6610"
+#define REMOTE_INPUT_UUID "8CB5C136-DA67-4F99-B4A1-F9CD35005CF4"
+#define TERMINATE_APP_UUID "E16CBE1B-295D-4632-9A76-EC4180C857D3"
+
 namespace proc {
   using file_t = util::safe_ptr_v2<FILE, int, fclose>;
 
@@ -65,6 +70,7 @@ namespace proc {
      */
     std::vector<std::string> detached;
 
+    std::string idx;
     std::string uuid;
     std::string name;
     std::string cmd;
@@ -72,6 +78,7 @@ namespace proc {
     std::string output;
     std::string image_path;
     std::string id;
+    std::string gamepad;
     bool elevated;
     bool auto_detach;
     bool wait_all;
@@ -95,7 +102,6 @@ namespace proc {
     bool virtual_display;
     bool allow_client_commands;
 
-
     proc_t(
       boost::process::v1::environment &&env,
       std::vector<ctx_t> &&apps
@@ -107,7 +113,7 @@ namespace proc {
 
     void launch_input_only();
 
-    int execute(int app_id, const ctx_t& _app, std::shared_ptr<rtsp_stream::launch_session_t> launch_session);
+    int execute(const ctx_t& _app, std::shared_ptr<rtsp_stream::launch_session_t> launch_session);
 
     /**
      * @return `_app_id` if a process is running, otherwise returns `0`
@@ -122,7 +128,7 @@ namespace proc {
     std::string get_last_run_app_name();
     std::string get_running_app_uuid();
     boost::process::environment get_env();
-    void terminate(bool immediate = false);
+    void terminate(bool immediate = false, bool needs_refresh = true);
 
   private:
     int _app_id;
@@ -131,6 +137,7 @@ namespace proc {
     boost::process::v1::environment _env;
 
     std::shared_ptr<rtsp_stream::launch_session_t> _launch_session;
+    std::shared_ptr<config::input_t> _saved_input_config;
 
     std::vector<ctx_t> _apps;
     ctx_t _app;
@@ -157,7 +164,7 @@ namespace proc {
   std::tuple<std::string, std::string> calculate_app_id(const std::string &app_name, std::string app_image_path, int index);
 
   std::string validate_app_image_path(std::string app_image_path);
-  void refresh(const std::string &file_name);
+  void refresh(const std::string &file_name, bool needs_terminate = true);
   void migrate_apps(nlohmann::json* fileTree_p, nlohmann::json* inputTree_p);
   std::optional<proc::proc_t> parse(const std::string &file_name);
 

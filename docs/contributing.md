@@ -5,8 +5,8 @@ Read our contribution guide in our organization level
 ## Recommended Tools
 
 | Tool                                                                                                                                                                           | Description                                                                                                                                                                           |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| <a href="https://www.jetbrains.com/clion/"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/CLion_icon.svg" width="30" height="30"></a><br>CLion | Recommended IDE for C++ development. Free licenses available for open source developers through the [JetBrains Open Source Program](https://www.jetbrains.com/community/opensource/). |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| <a href="https://www.jetbrains.com/clion/"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/CLion_icon.svg" width="30" height="30"></a><br>CLion | Recommended IDE for C and C++ development. Free for non-commercial use. |
 
 ## Project Patterns
 
@@ -16,7 +16,7 @@ Read our contribution guide in our organization level
 * [EJS](https://www.npmjs.com/package/vite-plugin-ejs) is used as a templating system for the pages
   (check `template_header.html` and `template_header_main.html`).
 * The Style System is provided by [Bootstrap](https://getbootstrap.com).
-* The JS framework used by the more interactive pages is [Vus.js](https://vuejs.org).
+* The JS framework used by the more interactive pages is [Vue.js](https://vuejs.org).
 
 #### Building
 

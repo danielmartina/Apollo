@@ -416,12 +416,7 @@ namespace config {
           auto final_resolution = entry.template get_optional<std::string>("final_resolution"s);
           auto final_refresh_rate = entry.template get_optional<std::string>("final_refresh_rate"s);
 
-          output_field.push_back(video_t::dd_t::mode_remapping_entry_t {
-            requested_resolution.value_or(""),
-            requested_fps.value_or(""),
-            final_resolution.value_or(""),
-            final_refresh_rate.value_or("")
-          });
+          output_field.push_back(video_t::dd_t::mode_remapping_entry_t {requested_resolution.value_or(""), requested_fps.value_or(""), final_resolution.value_or(""), final_refresh_rate.value_or("")});
         }
       }};
 
@@ -518,11 +513,13 @@ namespace config {
     0,  // max_bitrate
 
     "1920x1080x60",  // fallback_mode
+    false, // isolated Display
   };
 
   audio_t audio {
     {},  // audio_sink
     {},  // virtual_sink
+    true,  // stream audio
     true,  // install_steam_drivers
     true, // keep_sink_default
     true, // auto_capture
@@ -581,6 +578,7 @@ namespace config {
     false, // hide_tray_controls
     true, // enable_pairing
     true, // enable_discovery
+    false, // envvar_compatibility_mode
     "en",  // locale
     2,  // min_log_level
     0,  // flags
@@ -1198,6 +1196,7 @@ namespace config {
     int_between_f(vars, "min_fps_factor", video.min_fps_factor, {1, 3});
     int_f(vars, "max_bitrate", video.max_bitrate);
     string_f(vars, "fallback_mode", video.fallback_mode);
+    bool_f(vars, "isolated_virtual_display_option", video.isolated_virtual_display_option);
 
     path_f(vars, "pkey", nvhttp.pkey);
     path_f(vars, "cert", nvhttp.cert);
@@ -1215,6 +1214,7 @@ namespace config {
 
     string_f(vars, "audio_sink", audio.sink);
     string_f(vars, "virtual_sink", audio.virtual_sink);
+    bool_f(vars, "stream_audio", audio.stream);
     bool_f(vars, "install_steam_audio_drivers", audio.install_steam_drivers);
     bool_f(vars, "keep_sink_default", audio.keep_default);
     bool_f(vars, "auto_capture_sink", audio.auto_capture);
@@ -1282,6 +1282,7 @@ namespace config {
     bool_f(vars, "hide_tray_controls", sunshine.hide_tray_controls);
     bool_f(vars, "enable_pairing", sunshine.enable_pairing);
     bool_f(vars, "enable_discovery", sunshine.enable_discovery);
+    bool_f(vars, "envvar_compatibility_mode", sunshine.envvar_compatibility_mode);
     bool_f(vars, "notify_pre_releases", sunshine.notify_pre_releases);
 
     int port = sunshine.port;

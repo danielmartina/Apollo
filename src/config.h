@@ -147,11 +147,13 @@ namespace config {
     int max_bitrate;  // Maximum bitrate, sets ceiling in kbps for bitrate requested from client
 
     std::string fallback_mode;
+    bool isolated_virtual_display_option;
   };
 
   struct audio_t {
     std::string sink;
     std::string virtual_sink;
+    bool stream;
     bool install_steam_drivers;
     bool keep_default;
     bool auto_capture;
@@ -255,6 +257,7 @@ namespace config {
     bool hide_tray_controls;
     bool enable_pairing;
     bool enable_discovery;
+    bool envvar_compatibility_mode;
     std::string locale;
     int min_log_level;
     std::bitset<flag::FLAG_SIZE> flags;

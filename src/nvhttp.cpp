@@ -368,7 +368,7 @@ namespace nvhttp {
     }
   }
 
-  std::shared_ptr<rtsp_stream::launch_session_t> make_launch_session(bool host_audio, bool input_only, int appid, const args_t &args, const crypto::named_cert_t* named_cert_p) {
+  std::shared_ptr<rtsp_stream::launch_session_t> make_launch_session(bool host_audio, bool input_only, const args_t &args, const crypto::named_cert_t* named_cert_p) {
     auto launch_session = std::make_shared<rtsp_stream::launch_session_t>();
 
     launch_session->id = ++session_id_counter;
@@ -443,7 +443,6 @@ namespace nvhttp {
     launch_session->device_name = named_cert_p->name.empty() ? "ApolloDisplay"s : named_cert_p->name;
     launch_session->unique_id = named_cert_p->uuid;
     launch_session->perm = named_cert_p->perm;
-    launch_session->appid = appid;
     launch_session->enable_sops = util::from_view(get_arg(args, "sops", "0"));
     launch_session->surround_info = util::from_view(get_arg(args, "surroundAudioInfo", "196610"));
     launch_session->surround_params = (get_arg(args, "surroundParams", ""));
@@ -983,9 +982,11 @@ namespace nvhttp {
         current_appid = 0;
       }
       tree.put("root.currentgame", current_appid);
+      tree.put("root.currentgameuuid", proc::proc.get_running_app_uuid());
       tree.put("root.state", current_appid > 0 ? "SUNSHINE_SERVER_BUSY" : "SUNSHINE_SERVER_FREE");
     } else {
       tree.put("root.currentgame", 0);
+      tree.put("root.currentgameuuid", "");
       tree.put("root.state", "SUNSHINE_SERVER_FREE");
     }
 
@@ -1089,6 +1090,7 @@ namespace nvhttp {
         app_node.put("IsHdrSupported"s, video::active_hevc_mode == 3 ? 1 : 0);
         app_node.put("AppTitle"s, app.name);
         app_node.put("UUID", app.uuid);
+        app_node.put("IDX", app.idx);
         app_node.put("ID", app.id);
 
         apps.push_back(std::make_pair("App", std::move(app_node)));
@@ -1101,6 +1103,7 @@ namespace nvhttp {
       app_node.put("IsHdrSupported"s, 0);
       app_node.put("AppTitle"s, "Permission Denied");
       app_node.put("UUID", "");
+      app_node.put("IDX", "0");
       app_node.put("ID", "114514");
 
       apps.push_back(std::make_pair("App", std::move(app_node)));
@@ -1124,16 +1127,25 @@ namespace nvhttp {
 
     auto args = request->parse_query_string();
 
-    auto appid_str = get_arg(args, "appid");
+    auto appid_str = get_arg(args, "appid", "0");
+    auto appuuid_str = get_arg(args, "appuuid", "");
     auto appid = util::from_view(appid_str);
     auto current_appid = proc::proc.running();
+    auto current_app_uuid = proc::proc.get_running_app_uuid();
     bool is_input_only = config::input.enable_input_only_mode && appid == proc::input_only_app_id;
 
     auto named_cert_p = get_verified_cert(request);
     auto perm = PERM::launch;
 
+    BOOST_LOG(verbose) << "Launching app [" << appid_str << "] with UUID [" << appuuid_str << "]";
+    // BOOST_LOG(verbose) << "QS: " << request->query_string;
+
     // If we have already launched an app, we should allow clients with view permission to join the input only or current app's session.
-    if (current_appid > 0 && appid != proc::terminate_app_id && (is_input_only || appid == current_appid)) {
+    if (
+      current_appid > 0
+      && (appuuid_str != TERMINATE_APP_UUID || appid != proc::terminate_app_id)
+      && (is_input_only || appid == current_appid || (!appuuid_str.empty() && appuuid_str == current_app_uuid))
+    ) {
       perm = PERM::_allow_view;
     }
 
@@ -1150,7 +1162,7 @@ namespace nvhttp {
       args.find("rikey"s) == std::end(args) ||
       args.find("rikeyid"s) == std::end(args) ||
       args.find("localAudioPlayMode"s) == std::end(args) ||
-      args.find("appid"s) == std::end(args)
+      (args.find("appid"s) == std::end(args) && args.find("appuuid"s) == std::end(args))
     ) {
       tree.put("root.resume", 0);
       tree.put("root.<xmlattr>.status_code", 400);
@@ -1161,7 +1173,10 @@ namespace nvhttp {
 
     if (!is_input_only) {
       // Special handling for the "terminate" app
-      if (config::input.enable_input_only_mode && appid == proc::terminate_app_id) {
+      if (
+        (config::input.enable_input_only_mode && appid == proc::terminate_app_id)
+        || appuuid_str == TERMINATE_APP_UUID
+      ) {
         proc::proc.terminate();
 
         tree.put("root.resume", 0);
@@ -1171,7 +1186,14 @@ namespace nvhttp {
         return;
       }
 
-      if (current_appid > 0 && current_appid != proc::input_only_app_id && appid != current_appid) {
+      if (
+        current_appid > 0
+        && current_appid != proc::input_only_app_id
+        && (
+          (appid > 0 && appid != current_appid)
+          || (!appuuid_str.empty() && appuuid_str != current_app_uuid)
+        )
+      ) {
         tree.put("root.resume", 0);
         tree.put("root.<xmlattr>.status_code", 400);
         tree.put("root.<xmlattr>.status_message", "An app is already running on this host");
@@ -1181,7 +1203,7 @@ namespace nvhttp {
     }
 
     host_audio = util::from_view(get_arg(args, "localAudioPlayMode"));
-    auto launch_session = make_launch_session(host_audio, is_input_only, appid, args, named_cert_p);
+    auto launch_session = make_launch_session(host_audio, is_input_only, args, named_cert_p);
 
     auto encryption_mode = net::encryption_mode_for_address(request->remote_endpoint().address());
     if (!launch_session->rtsp_cipher && encryption_mode == config::ENCRYPTION_MODE_MANDATORY) {
@@ -1210,9 +1232,12 @@ namespace nvhttp {
           proc::proc.launch_input_only();
         }
       }
-    } else if (appid > 0) {
-      if (appid == current_appid) {
+    } else if (appid > 0 || !appuuid_str.empty()) {
+      if (appid == current_appid || (!appuuid_str.empty() && appuuid_str == current_app_uuid)) {
         // We're basically resuming the same app
+
+        BOOST_LOG(debug) << "Resuming app [" << proc::proc.get_last_run_app_name() << "] from launch app path...";
+
         if (!proc::proc.allow_client_commands) {
           launch_session->client_do_cmds.clear();
           launch_session->client_undo_cmds.clear();
@@ -1234,12 +1259,12 @@ namespace nvhttp {
         }
       } else {
         const auto& apps = proc::proc.get_apps();
-        auto app_iter = std::find_if(apps.begin(), apps.end(), [&appid_str](const auto _app) {
-          return _app.id == appid_str;
+        auto app_iter = std::find_if(apps.begin(), apps.end(), [&appid_str, &appuuid_str](const auto _app) {
+          return _app.id == appid_str || _app.uuid == appuuid_str;
         });
 
         if (app_iter == apps.end()) {
-          BOOST_LOG(error) << "Couldn't find app with ID ["sv << appid_str << ']';
+          BOOST_LOG(error) << "Couldn't find app with ID ["sv << appid_str << "] or UUID ["sv << appuuid_str << ']';
           tree.put("root.<xmlattr>.status_code", 404);
           tree.put("root.<xmlattr>.status_message", "Cannot find requested application");
           tree.put("root.gamesession", 0);
@@ -1251,7 +1276,7 @@ namespace nvhttp {
           launch_session->client_undo_cmds.clear();
         }
 
-        auto err = proc::proc.execute(appid, *app_iter, launch_session);
+        auto err = proc::proc.execute(*app_iter, launch_session);
         if (err) {
           tree.put("root.<xmlattr>.status_code", err);
           tree.put(
@@ -1328,7 +1353,7 @@ namespace nvhttp {
     if (no_active_sessions && args.find("localAudioPlayMode"s) != std::end(args)) {
       host_audio = util::from_view(get_arg(args, "localAudioPlayMode"));
     }
-    auto launch_session = make_launch_session(host_audio, false, 0, args, named_cert_p);
+    auto launch_session = make_launch_session(host_audio, false, args, named_cert_p);
 
     if (!proc::proc.allow_client_commands) {
       launch_session->client_do_cmds.clear();

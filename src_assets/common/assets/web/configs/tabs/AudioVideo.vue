@@ -100,6 +100,13 @@ const validateFallbackMode = (event) => {
       </template>
     </PlatformLayout>
 
+    <!-- Disable Audio -->
+    <Checkbox class="mb-3"
+              id="stream_audio"
+              locale-prefix="config"
+              v-model="config.stream_audio"
+              default="true"
+    ></Checkbox>
 
     <AdapterNameSelector
         :platform="platform"
@@ -150,6 +157,15 @@ const validateFallbackMode = (event) => {
               id="double_refreshrate"
               locale-prefix="config"
               v-model="config.double_refreshrate"
+              default="false"
+              v-if="platform === 'windows'"
+    ></Checkbox>
+
+    <!-- Isolated Virtual Display -->
+    <Checkbox class="mb-3"
+              id="isolated_virtual_display_option"
+              locale-prefix="config"
+              v-model="config.isolated_virtual_display_option"
               default="false"
               v-if="platform === 'windows'"
     ></Checkbox>
